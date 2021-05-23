@@ -17,14 +17,14 @@ app.get("notes", (req, res) => {
     res.sendFile(path.join(__dirname, "public/notes.html"));
 });
 
-app.get("api/notes", (req, res) => {
+app.get("/api/notes", (req, res) => {
     fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
         if (err) throw err;
         res.json(JSON.parse(data));
     });
 });
 
-app.post("api/notes", (req, res) => {
+app.post("/api/notes", (req, res) => {
     fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
         if (err) throw err;
         const db = JSON.parse(data);
@@ -50,7 +50,7 @@ app.post("api/notes", (req, res) => {
     });
 });
 
-app.delete("api/notes/:id", (req, res) => {
+app.delete("/api/notes/:id", (req, res) => {
     const id = parseInt(req.params.id);
     fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
         if (err) throw err;
