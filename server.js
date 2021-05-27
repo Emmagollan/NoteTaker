@@ -1,83 +1,58 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-
+const path = require('path');
+const fs = require('fs');
+const express = require('express');
+const PORT = process.env.PORT || 3001;
 const app = express();
-const PORT = process.env.PORT || 3025;
+const cryptoRandomString = require('crypto-random-string');
 
-app.use(express.urlencoded({extended: true}));
-app.use(express.static("public"));
+// parse incoming string or array data
+app.use(express.urlencoded({ extended: true }));
+// parse incoming JSON data
 app.use(express.json());
+//file path to the public folder and instruct the server to make these files static resources.
+app.use(express.static('public'));
 
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public/index.html"));
+//returns the index.html file
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, './public/index.html'));
 });
 
-app.get("notes", (req, res) => {
-    res.sendFile(path.join(__dirname, "public/notes.html"));
+// returns the notes.html file
+app.get('/notes', (req, res) => {
+  res.sendFile(path.join(__dirname, './public/notes.html'));
 });
 
-app.get("api/notes", (req, res) => {
-    fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
-        if (err) throw err;
-        res.json(JSON.parse(data));
-    });
+// reads db.json and returns all saved notes as JSON
+app.get('/api/notes', (req, res) => {
+  fs.readFile('./db/db.json', (err, data) => {
+    if (err) throw err;
+    res.json(JSON.parse(data))
+  });
 });
 
-app.post("api/notes", (req, res) => {
-    fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
-        if (err) throw err;
-        const db = JSON.parse(data);
-        const newDB = [];
-
-        db.push(req.body);
-
-        for (let i = 0; i < db.length; i++)
-        {
-            const newNote = {
-                title: db[i].title,
-                text: db[i].text,
-                id: i
-            };
-
-            newDB.push(newNote);
-        }
-
-        fs.writeFile(path.join(__dirname, "db/db.json"), JSON.stringify(newDB, null, 2), (err) => {
-            if (err) throw err;
-            res.json(req.body);
-        });
-    });
+// creates new note with a unique ID
+app.post('/api/notes', (req, res) => {
+  let body = req.body;
+  body.id = cryptoRandomString({ length: 10 });
+  let newNotes = JSON.parse(fs.readFileSync('./db/db.json', null, 2))
+  newNotes.push(body);
+  fs.writeFileSync('./db/db.json', JSON.stringify(newNotes, null, 2)), err => {
+    if (err) throw err;
+  };
+  res.send(newNotes);
 });
 
-app.delete("api/notes/:id", (req, res) => {
-    const id = parseInt(req.params.id);
-    fs.readFile(path.join(__dirname, "db/db.json"), "utf8", (err, data) => {
-        if (err) throw err;
-        const db = JSON.parse(data);
-        const newDB = [];
-
-        for(let i = 0; i < db.length; i++)
-        {
-            if (i !== id)
-            {
-                const newNote = {
-                    title: db[i].title,
-                    text: db[i].text,
-                    id: newDB.length
-                };
-
-                newDB.push(newNote);
-            }
-        }
-
-        fs.writeFile(path.join(__dirname, "db/db.json"), JSON.stringify(newDB, null, 2), (err) => {
-            if (err) throw err;
-            res.json(req.body);
-        });
-    });
+// delete note
+app.delete('/api/notes/:id', (req, res) => {
+  let id = req.params.id.toString();
+  let readNote = JSON.parse(fs.readFileSync("./db/db.json", null, 2));
+  let deleteNote = readNote.filter(note => note.id.toString() !== id);
+  fs.writeFileSync("./db/db.json", JSON.stringify(deleteNote, null, 2)), err => {
+    if (err) throw err;
+  };
+  res.sendStatus(200);
 });
 
 app.listen(PORT, () => {
-    console.log(`App listening on PORT ${PORT}.`);
-})
+  console.log(`API server now on port ${PORT}!`);
+});
